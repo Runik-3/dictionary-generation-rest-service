@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "ES6",        
+    "module": "commonjs",                        
+    "lib": ["dom", "dom.iterable", "ESNext"],    
+    "outDir": "./dist",  
+    "rootDir": "./",      
+    "strict": true,                    
+    "baseUrl": "./",                      
+    "paths": {                                   
+      "@controllers/*": ["src/api/controllers/*"],
+      "@errors/*": ["src/api/errors/*"],
+      "@interfaces/*": ["src/api/interfaces/*"],
+      "@middleware/*": ["src/api/middleware/*"],
+      "@routes/*": ["src/api/routes/*"],
+      "@services/*": ["src/api/services/*"],
+      "@utils/*": ["src/api/utils/*"],
+      "@helpers/*": ["src/api/helpers/*"]
+    }, 
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,   
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "pretty": true,
+    "skipLibCheck": true,                     
+    "forceConsistentCasingInFileNames": true,
+    "types": ["jest"]
+  },
+    "include": ["src/**/*.ts", "src/**/*.json", ".env"],
+    "exclude": ["node_modules"]
+}
