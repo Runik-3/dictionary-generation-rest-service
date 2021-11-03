@@ -1,9 +1,10 @@
 import I18n from '@interfaces/enums/language.enum';
 import Dictionary from '@interfaces/dictionary.interface';
+import { Definitions } from '@interfaces/definitions.interface';
 import WordDefinition from '@interfaces/word.definition.interface';
 import DictionaryCapacityException from '@errors/dictionary.capacity.exception';
 
-export default class RunikDictionary {
+export default class RunikDictionary implements Dictionary {
     private _size: number;
 
     private readonly _lang: I18n;
@@ -12,14 +13,14 @@ export default class RunikDictionary {
 
     private readonly _capacity: number;
 
-    private readonly _dictionary: Dictionary;
+    private readonly _definitions: Definitions;
 
     constructor(name: string, lang: I18n, capacity = 250000) {
         this._size = 0;
         this._lang = lang;
         this._name = name;
         this._capacity = capacity;
-        this._dictionary = { name, lang, definitions: {} };
+        this._definitions = {};
     }
 
     // GETTERS
@@ -39,8 +40,8 @@ export default class RunikDictionary {
         return this._capacity;
     }
 
-    public get dictionary(): Dictionary {
-        return this._dictionary;
+    public get definitions(): Definitions {
+        return this._definitions;
     }
 
     /**
@@ -58,8 +59,7 @@ export default class RunikDictionary {
                 return false;
             }
 
-            this._dictionary.definitions[definition.word] =
-                definition.information;
+            this._definitions[definition.word] = definition.information;
             this._size += 1;
             return true;
         }
@@ -76,7 +76,7 @@ export default class RunikDictionary {
      */
     public deleteDefinition(term: string): boolean {
         if (this.isTermAlreadyDefined(term)) {
-            delete this._dictionary.definitions[term];
+            delete this._definitions[term];
             this._size -= 1;
             return true;
         }
@@ -90,7 +90,7 @@ export default class RunikDictionary {
      * @returns `true` if `term` already exists in the dictionary; otherwise `false`
      */
     private isTermAlreadyDefined(term: string): boolean {
-        if (term in this._dictionary.definitions) {
+        if (term in this._definitions) {
             return true;
         }
         return false;

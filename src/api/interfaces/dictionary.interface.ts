@@ -1,8 +1,6 @@
-import I18n from './enums/language.enum';
-import Definition from './definition.interface';
+import WordDefinition from './word.definition.interface';
 
 export default interface Dictionary {
-    name: string;
-    lang: I18n;
-    definitions: { [term: string]: Definition };
+    deleteDefinition(term: string): boolean;
+    addDefinition(definition: WordDefinition): boolean;
 }

@@ -50,14 +50,14 @@ export default class FandomParser implements Parser {
      * @param limit - The maximum number of entries allowed in the dictionary
      * @returns A dictionary of terms and their definitions for the given wiki
      */
-    public async generateDictionary(limit?: number): Promise<Dictionary> {
+    public async generateDictionary(limit?: number): Promise<RunikDictionary> {
         const runikDictionary = new RunikDictionary(
             this._wiki.name,
             this._lang,
             limit,
         );
         // await this.populateDictionary(runikDictionary);
-        return runikDictionary.dictionary;
+        return runikDictionary;
     }
 
     public async fetchPageBatch(
