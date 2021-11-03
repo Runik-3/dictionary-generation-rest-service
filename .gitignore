@@ -6,4 +6,6 @@
 .env*
 logs
 
+src/api/data/dictionaries
+
 /src/prisma/migrations

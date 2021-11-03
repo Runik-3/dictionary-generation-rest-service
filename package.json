@@ -17,6 +17,7 @@
   "prisma": {
     "seed": "ts-node ./src/prisma/db.seed.ts"
   },
+  
   "scripts": {
     "build": "npm run clean && tsc --project tsconfig.json && tsc-alias -p tsconfig.json",
     "clean": "rimraf dist/",
