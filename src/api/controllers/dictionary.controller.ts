@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 
+import XDXFGenerator from '@helpers/generators/xdxf.file.generator';
 import I18n from '../interfaces/enums/language.enum';
 import FandomParser from '../helpers/parsers/fandom.parser';
 
@@ -25,11 +26,10 @@ export default class DictionaryController {
             const dictionary = await parser.generateDictionary(
                 Number(capacity),
             );
+            const generator = new XDXFGenerator();
+            const xdxf = generator.generate(dictionary);
 
-            // TODO: Create class to handle xdxf generation
-            // const dictionary = await xdxf.generateDictionary(rawDictionary)
-
-            res.json(dictionary);
+            res.send(xdxf);
         } catch (error) {
             next(error);
         }

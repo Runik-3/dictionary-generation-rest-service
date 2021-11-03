@@ -63,7 +63,9 @@ export default class FandomParser implements Parser {
      * @param capacity - The maximum number of entries allowed in the dictionary
      * @returns A dictionary of terms and their definitions for the given wiki
      */
-    public async generateDictionary(capacity?: number): Promise<Dictionary> {
+    public async generateDictionary(
+        capacity?: number,
+    ): Promise<RunikDictionary> {
         const runikDictionary = new RunikDictionary(
             this._wiki.name,
             this._lang,
@@ -79,7 +81,7 @@ export default class FandomParser implements Parser {
             `✅  Finished creating 📙 dictionary for ${this._wiki.name}: ${runikDictionary.size} entries`,
         );
 
-        return runikDictionary.dictionary;
+        return runikDictionary;
     }
 
     public async fetchSupportedLanguages(page: string): Promise<Language[]> {
