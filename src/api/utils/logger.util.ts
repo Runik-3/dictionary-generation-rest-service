@@ -76,10 +76,17 @@ const logger: winston.Logger = winston.createLogger(options);
 /**
  * Silence logger when running tests
  */
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV === 'development') {
     logger.add(
         new winston.transports.Console({
             level: 'data',
+            format: consoleLogFormat,
+        }),
+    );
+} else if (process.env.NODE_ENV === 'production') {
+    logger.add(
+        new winston.transports.Console({
+            level: 'warn',
             format: consoleLogFormat,
         }),
     );

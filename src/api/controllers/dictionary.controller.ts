@@ -27,9 +27,13 @@ export default class DictionaryController {
                 Number(capacity),
             );
             const generator = new XDXFGenerator();
-            const xdxf = generator.generate(dictionary);
+            const dictionaryContents = generator.generate(dictionary);
 
-            res.send(xdxf);
+            res.set({
+                'Content-Type': 'text/xml',
+                'Content-Disposition': `attachment; filename="${dictionary.name}.xdxf"`,
+            });
+            res.send(dictionaryContents);
         } catch (error) {
             next(error);
         }
