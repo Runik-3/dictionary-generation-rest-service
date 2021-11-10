@@ -17,7 +17,6 @@
   "prisma": {
     "seed": "ts-node ./src/prisma/db.seed.ts"
   },
-  
   "scripts": {
     "build": "npm run clean && tsc --project tsconfig.json && tsc-alias -p tsconfig.json",
     "clean": "rimraf dist/",
@@ -78,7 +77,8 @@
     "shelljs": "^0.8.4",
     "supertest": "^6.1.6",
     "winston": "^3.3.3",
-    "winston-daily-rotate-file": "^4.5.5"
+    "winston-daily-rotate-file": "^4.5.5",
+    "xml": "^1.0.1"
   },
   "devDependencies": {
     "@types/async": "^3.2.9",

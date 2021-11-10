@@ -16,4 +16,6 @@ COPY . $HOME/node_docker/
 
 RUN npm run build
 
+EXPOSE 3000
+
 CMD ["npm", "start"]
