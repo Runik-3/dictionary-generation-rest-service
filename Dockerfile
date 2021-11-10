@@ -1,8 +1,10 @@
-FROM node:latest
+FROM alpine
 
 ENV HOME=/home/app
 
-RUN apt-get update && apt-get install htop
+RUN apk update && apk add --update htop nodejs-current npm && apk update
+
+RUN node --version
 
 COPY package.json package-lock.json $HOME/node_docker/
 
