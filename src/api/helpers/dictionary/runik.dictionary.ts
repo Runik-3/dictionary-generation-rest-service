@@ -55,7 +55,8 @@ export default class RunikDictionary implements Dictionary {
      */
     public addDefinition(definition: WordDefinition): boolean {
         if (!this.isTermAlreadyDefined(definition.word) && this.hasSpace()) {
-            if (definition.information.definition === '') {
+            // TODO: refactor this for readability
+            if (!(definition.information.definition || definition.word)) {
                 return false;
             }
 

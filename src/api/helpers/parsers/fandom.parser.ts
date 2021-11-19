@@ -141,7 +141,6 @@ export default class FandomParser implements Parser {
     ): void {
         // TODO: Refine this section for parsing
         const $ = cheerio.load(bodyHtml);
-        const dataing = $('.notice metadata u b').text();
 
         let description = '';
         description = $('p b').first().parent('p').text();
