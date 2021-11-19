@@ -30,13 +30,24 @@ export default class DictionaryController {
             const dictionaryContents = generator.generate(dictionary);
 
             res.set({
-                'Content-Type': 'text/xml',
+                'Content-Type': 'text/xml; charset=utf-8',
                 'Content-Disposition': `attachment; filename="${dictionary.name}.xdxf"`,
             });
+
             res.send(dictionaryContents);
         } catch (error) {
             next(error);
         }
+    };
+
+    public static handleGetHome = (
+        req: Request,
+        res: Response,
+        next: NextFunction,
+    ): void => {
+        res.status(200).send(
+            "👋 Welcome to Runik's Dictionary 📚 Generation API - v1.05",
+        );
     };
 
     public static handleGetSupportedLanguages = async (

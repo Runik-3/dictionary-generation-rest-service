@@ -16,11 +16,11 @@ const expressMiddleware = (app: Application): void => {
 
     app.use(express.static(publicDir));
 
-    app.use(cors());
+    // app.use(cors());
     app.use(morgan('tiny', { stream }));
 
-    app.use(helmet({ ...CSP }));
-    app.use(helmet.contentSecurityPolicy({ ...CSPDirectives }));
+    // app.use(helmet({ ...CSP }));
+    // app.use(helmet.contentSecurityPolicy({ ...CSPDirectives }));
 
     app.use(compression());
     app.use(express.json());

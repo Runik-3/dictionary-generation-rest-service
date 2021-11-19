@@ -1,8 +1,13 @@
 import { Server } from 'http';
 import express, { Application, Router } from 'express';
 
+import {
+    PORT,
+    ENVIRONMENT,
+    HEADERS_TIMEOUT,
+    KEEP_ALIVE_TIMEOUT,
+} from '@utils/secrets.util';
 import { logger } from '../api/utils/logger.util';
-import { PORT, ENVIRONMENT } from '../api/utils/secrets.util';
 import errorMiddleware from '../api/middleware/error.middleware';
 import expressMiddleware from '../api/middleware/express.middleware';
 import ApplicationException from '../api/errors/application.exception';
@@ -65,6 +70,16 @@ export default class App {
                     `🚀 Application Started; Listening on port: ${this.port}`,
                 );
             }
+        });
+        this._server.setTimeout(KEEP_ALIVE_TIMEOUT);
+        this._server.keepAliveTimeout = KEEP_ALIVE_TIMEOUT;
+        this._server.headersTimeout = HEADERS_TIMEOUT;
+
+        this._server.on('connection', socket => {
+            socket.setTimeout(10 * 60 * 1000);
+            socket.once('timeout', () => {
+                process.nextTick(socket.destroy);
+            });
         });
     }
 
