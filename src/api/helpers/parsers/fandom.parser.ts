@@ -115,6 +115,8 @@ export default class FandomParser implements Parser {
                         parsedPage?.parse?.headhtml || '',
                         runikDictionary,
                     );
+                    const used = process.memoryUsage().heapUsed / 1024 / 1024;
+                    logger.info(`The script uses approximately ${used} MB`);
                 } catch (error) {
                     if (error instanceof DictionaryCapacityException) {
                         logger.error(`⛔ Dictionary has reached its capacity.`);
@@ -124,6 +126,14 @@ export default class FandomParser implements Parser {
                     logger.data('Could not parse page. 🔁 Skipping ...');
                 }
             });
+            // const memory = process.memoryUsage();
+            // for (const [key, value] of Object.entries(memory)) {
+            //     logger.warn(
+            //         `${key}: ${
+            //             Math.round((value / 1024 / 1024) * 100) / 100
+            //         } MB`,
+            //     );
+            // }
         } catch (error) {
             if (!(error instanceof DictionaryCapacityException)) {
                 logger.error(error);
@@ -141,7 +151,6 @@ export default class FandomParser implements Parser {
     ): void {
         // TODO: Refine this section for parsing
         const $ = cheerio.load(bodyHtml);
-        const dataing = $('.notice metadata u b').text();
 
         let description = '';
         description = $('p b').first().parent('p').text();

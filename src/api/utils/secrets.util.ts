@@ -2,7 +2,10 @@ import dotenv from 'dotenv';
 import IOHandler from './iohandler.util';
 import { logger } from './logger.util';
 
+export const HEADERS_TIMEOUT = 800 * 1000;
+export const KEEP_ALIVE_TIMEOUT = 780 * 1000;
 export const PORT = process.env.PORT || 3000;
+
 export const { WIKI_USERNAME } = process.env || '';
 export const { WIKI_PASSWORD } = process.env || '';
 export const ENVIRONMENT = process.env.NODE_ENV || 'development';
