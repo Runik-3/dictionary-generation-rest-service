@@ -31,7 +31,7 @@
     "prisma:generate": "prisma generate --schema ./src/prisma/schema.prisma",
     "prisma:seed": "prisma db seed",
     "serve-debug": "nodemon --inspect dist/src/server.js",
-    "serve": "cross-env NODE_ENV=production node -r tsconfig-paths/register dist/src/server.js",
+    "serve": "cross-env NODE_ENV=production node  --max-old-space-size=7000 -r tsconfig-paths/register dist/src/server.js",
     "start": "npm run serve",
     "test": "cross-env NODE_ENV=test jest -i --colors --verbose --coverage --detectOpenHandles --passWithNoTests",
     "test:watch": "npm run test -- --watchAll",

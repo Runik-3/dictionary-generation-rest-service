@@ -77,7 +77,7 @@ export default class FandomParser implements Parser {
 
         await this.populateDictionary(runikDictionary);
         spinner.stop();
-        logger.info(
+        logger.warn(
             `✅  Finished creating 📙 dictionary for ${this._wiki.name}: ${runikDictionary.size} entries`,
         );
 
@@ -103,29 +103,61 @@ export default class FandomParser implements Parser {
     private async populateDictionary(runikDictionary: RunikDictionary) {
         try {
             const apiLimit = Math.ceil(runikDictionary.capacity / 100);
-            const pages = await this.fetchAllPages(apiLimit);
-            const parsedPages = await this.fetchAllPagesWithParsedData(pages);
 
-            parsedPages.forEach((parsedPage: ParsedPage) => {
-                try {
-                    FandomParser.addDefinition(
-                        parsedPage?.parse?.pageid || -1,
-                        parsedPage?.parse?.title || '',
-                        parsedPage?.parse?.text || '',
-                        parsedPage?.parse?.headhtml || '',
-                        runikDictionary,
-                    );
-                    const used = process.memoryUsage().heapUsed / 1024 / 1024;
-                    logger.info(`The script uses approximately ${used} MB`);
-                } catch (error) {
-                    if (error instanceof DictionaryCapacityException) {
-                        logger.error(`⛔ Dictionary has reached its capacity.`);
-                        throw error;
+            logger.warn('Fetching all pages ...');
+            const pages = await this.fetchAllPages(apiLimit);
+            logger.warn('🏁 Finished fetching initial pages.');
+
+            logger.warn('Parsing page data ...');
+            const parsedPages = await this.fetchAllPagesWithParsedData(pages);
+            logger.warn('🏁 Finished parsing page data.');
+
+            logger.warn('Adding definitions ...');
+            await Promise.all(
+                // eslint-disable-next-line array-callback-return
+                parsedPages.map(parsedPage => {
+                    try {
+                        FandomParser.addDefinition(
+                            parsedPage?.parse?.pageid || -1,
+                            parsedPage?.parse?.title || '',
+                            parsedPage?.parse?.text || '',
+                            parsedPage?.parse?.headhtml || '',
+                            runikDictionary,
+                        );
+                    } catch (error) {
+                        if (error instanceof DictionaryCapacityException) {
+                            logger.error(
+                                `⛔ Dictionary has reached its capacity.`,
+                            );
+                            throw error;
+                        }
+                        logger.error(error);
+                        logger.data('Could not parse page. 🔁 Skipping ...');
                     }
-                    logger.error(error);
-                    logger.data('Could not parse page. 🔁 Skipping ...');
-                }
-            });
+                }),
+            );
+            logger.warn('🏁 Finished adding definitions.');
+
+            // parsedPages.forEach((parsedPage: ParsedPage) => {
+            //     try {
+            //         FandomParser.addDefinition(
+            //             parsedPage?.parse?.pageid || -1,
+            //             parsedPage?.parse?.title || '',
+            //             parsedPage?.parse?.text || '',
+            //             parsedPage?.parse?.headhtml || '',
+            //             runikDictionary,
+            //         );
+            //         // const used = process.memoryUsage().heapUsed / 1024 / 1024;
+            //         // logger.info(`The script uses approximately ${used} MB`);
+            //     } catch (error) {
+            //         if (error instanceof DictionaryCapacityException) {
+            //             logger.error(`⛔ Dictionary has reached its capacity.`);
+            //             throw error;
+            //         }
+            //         logger.error(error);
+            //         logger.data('Could not parse page. 🔁 Skipping ...');
+            //     }
+            // });
             // const memory = process.memoryUsage();
             // for (const [key, value] of Object.entries(memory)) {
             //     logger.warn(
