@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { Request, Response, NextFunction } from 'express';
 
 import XDXFGenerator from '@helpers/generators/xdxf.file.generator';
 import { logger } from '@utils/logger.util';
 import FandomParser from '@helpers/parsers/fandom.parser';
 // import FandomParser from '@helpers/parsers/backup/fandom.parser-v3';
+import gc from '@utils/garbage.collector.util';
 import I18n from '../interfaces/enums/language.enum';
 
 export default class DictionaryController {
@@ -25,25 +27,43 @@ export default class DictionaryController {
                 capacity = '100000';
             }
 
-            const parser = new FandomParser(wiki, lang as I18n);
-            const dictionary = await parser.generateDictionary(
-                Number(capacity),
+            let parser = new FandomParser(wiki, lang as I18n);
+            let dictionary = await parser.generateDictionary(Number(capacity));
+            let generator = new XDXFGenerator();
+
+            logger.warn('Generating xdxf ...');
+            const dictionaryContents = generator.generate(dictionary);
+            logger.warn('🏁 Finished generating xdxf.');
+
+            logger.warn(
+                `2️⃣ This request uses approximately ${
+                    process.memoryUsage().heapUsed / 1024 / 1024
+                } MB`,
             );
-            // const generator = new XDXFGenerator();
 
-            // logger.warn('Generating xdxf ...');
-            // const dictionaryContents = generator.generate(dictionary);
-            // logger.warn('🏁 Finished generating xdxf.');
+            res.set({
+                'Content-Type': 'text/xml; charset=utf-8',
+                'Content-Disposition': `attachment; filename="${dictionary.name}.xdxf"`,
+            });
 
-            // res.set({
-            //     'Content-Type': 'text/xml; charset=utf-8',
-            //     'Content-Disposition': `attachment; filename="${dictionary.name}.xdxf"`,
-            // });
+            // @ts-ignore
+            parser = null;
 
-            // res.setTimeout(10 * 60 * 1000);
+            // @ts-ignore
+            generator = null;
 
-            // logger.warn('🛠️ Attempting to send file ...');
-            res.send(dictionary);
+            // @ts-ignore
+            dictionary = null;
+            gc();
+
+            logger.warn(
+                `3️⃣ This request uses approximately ${
+                    process.memoryUsage().heapUsed / 1024 / 1024
+                } MB`,
+            );
+
+            logger.warn('🛠️ Attempting to send file ...');
+            res.send(dictionaryContents);
         } catch (error) {
             next(error);
         }
