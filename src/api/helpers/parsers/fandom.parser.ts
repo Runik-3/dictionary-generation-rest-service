@@ -1,29 +1,29 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-restricted-syntax */
-import ora from 'ora';
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+
 import pLimit from 'p-limit';
 import cheerio from 'cheerio';
-import cliProgress from 'cli-progress';
 import { mwn as Mwn, ApiResponse } from 'mwn';
 
 import { logger } from '@utils/logger.util';
 import Page from '@interfaces/page.interface';
+import gc from '@utils/garbage.collector.util';
 import Language from '@interfaces/lang.interface';
 import Parser from '@interfaces/parser.interface';
 import I18n from '@interfaces/enums/language.enum';
-import Dictionary from '@interfaces/dictionary.interface';
 import ParsedPage from '@interfaces/parsed.page.interface';
 import FandomWiki from '@interfaces/fandom.wiki.interface';
+import RunikDictionary from '@helpers/dictionary/runik.dictionary';
 import { WIKI_PASSWORD, WIKI_USERNAME } from '@utils/secrets.util';
 import WordDefinition from '@interfaces/word.definition.interface';
 import DictionaryCapacityException from '@errors/dictionary.capacity.exception';
-
-import RunikDictionary from '../dictionary/runik.dictionary';
 
 export default class FandomParser implements Parser {
     private _bot: Mwn;
 
     private readonly _lang: I18n;
+
+    private _dictionary!: RunikDictionary;
 
     private readonly _wiki: FandomWiki;
 
@@ -66,24 +66,34 @@ export default class FandomParser implements Parser {
     public async generateDictionary(
         capacity?: number,
     ): Promise<RunikDictionary> {
-        const runikDictionary = new RunikDictionary(
+        this._dictionary = new RunikDictionary(
             this._wiki.name,
             this._lang,
             capacity,
         );
-        const spinner = ora().start(
-            `🛠️  Creating dictionary for ${this._wiki.name} ...\n`,
-        );
+        logger.warn(`🛠️  Creating dictionary for ${this._wiki.name} ...`);
 
-        await this.populateDictionary(runikDictionary);
-        spinner.stop();
+        await this.populateDictionary();
+
         logger.warn(
-            `✅  Finished creating 📙 dictionary for ${this._wiki.name}: ${runikDictionary.size} entries`,
+            `1️⃣ This request uses approximately ${
+                process.memoryUsage().heapUsed / 1024 / 1024
+            } MB`,
         );
 
-        return runikDictionary;
+        logger.warn(
+            `✅  Finished creating 📙 dictionary for ${this._wiki.name}: ${this._dictionary.size} entries`,
+        );
+
+        return this._dictionary;
     }
 
+    /**
+     * Fetches a list of supported languages for the given wiki `page`
+     *
+     * @param page - The wiki on interest
+     * @returns - A list of languages the specified wiki supports
+     */
     public async fetchSupportedLanguages(page: string): Promise<Language[]> {
         try {
             const parsedPage = await this._bot.request({
@@ -100,86 +110,68 @@ export default class FandomParser implements Parser {
         return [];
     }
 
-    private async populateDictionary(runikDictionary: RunikDictionary) {
+    /**
+     * Populates the dictionary with parsed terms from the wiki
+     *
+     * @remarks
+     * Pages are fetched in batches of 100, then parsed, and then the relevant definitions added
+     */
+    private async populateDictionary(): Promise<void> {
         try {
-            const apiLimit = Math.ceil(runikDictionary.capacity / 100);
+            let batchedResults: AsyncGenerator<ApiResponse> =
+                this.bot.continuedQueryGen({
+                    action: 'query',
+                    list: 'allpages',
+                    aplimit: 100,
+                });
 
-            logger.warn('Fetching all pages ...');
-            const pages = await this.fetchAllPages(apiLimit);
-            logger.warn('🏁 Finished fetching initial pages.');
+            for await (let batchedResult of batchedResults) {
+                if (this._dictionary.isFull()) {
+                    break;
+                }
 
-            logger.warn('Parsing page data ...');
-            const parsedPages = await this.fetchAllPagesWithParsedData(pages);
-            logger.warn('🏁 Finished parsing page data.');
-
-            logger.warn('Adding definitions ...');
-            await Promise.all(
-                // eslint-disable-next-line array-callback-return
-                parsedPages.map(parsedPage => {
-                    try {
-                        FandomParser.addDefinition(
-                            parsedPage?.parse?.pageid || -1,
-                            parsedPage?.parse?.title || '',
-                            parsedPage?.parse?.text || '',
-                            parsedPage?.parse?.headhtml || '',
-                            runikDictionary,
-                        );
-                    } catch (error) {
-                        if (error instanceof DictionaryCapacityException) {
-                            logger.error(
-                                `⛔ Dictionary has reached its capacity.`,
-                            );
-                            throw error;
-                        }
-                        logger.error(error);
-                        logger.data('Could not parse page. 🔁 Skipping ...');
+                let { query } = batchedResult;
+                if (query) {
+                    let pages: Page[] = query.allpages;
+                    if (pages) {
+                        await this.parsePages(pages);
                     }
-                }),
-            );
-            logger.warn('🏁 Finished adding definitions.');
 
-            // parsedPages.forEach((parsedPage: ParsedPage) => {
-            //     try {
-            //         FandomParser.addDefinition(
-            //             parsedPage?.parse?.pageid || -1,
-            //             parsedPage?.parse?.title || '',
-            //             parsedPage?.parse?.text || '',
-            //             parsedPage?.parse?.headhtml || '',
-            //             runikDictionary,
-            //         );
-            //         // const used = process.memoryUsage().heapUsed / 1024 / 1024;
-            //         // logger.info(`The script uses approximately ${used} MB`);
-            //     } catch (error) {
-            //         if (error instanceof DictionaryCapacityException) {
-            //             logger.error(`⛔ Dictionary has reached its capacity.`);
-            //             throw error;
-            //         }
-            //         logger.error(error);
-            //         logger.data('Could not parse page. 🔁 Skipping ...');
-            //     }
-            // });
-            // const memory = process.memoryUsage();
-            // for (const [key, value] of Object.entries(memory)) {
-            //     logger.warn(
-            //         `${key}: ${
-            //             Math.round((value / 1024 / 1024) * 100) / 100
-            //         } MB`,
-            //     );
-            // }
-        } catch (error) {
-            if (!(error instanceof DictionaryCapacityException)) {
-                logger.error(error);
-                logger.error(`🚨 Unable to populate dictionary fully.`);
+                    // @ts-ignore
+                    pages = null;
+                    gc();
+                }
+
+                // @ts-ignore
+                query = null;
+
+                // @ts-ignore
+                batchedResult = null;
+                gc();
             }
+
+            // @ts-ignore
+            batchedResults = null;
+            gc();
+        } catch (error) {
+            logger.error(error);
+            logger.error(`Unable to fetch all pages.`);
         }
     }
 
-    private static addDefinition(
+    /**
+     * Scrapes the given body & head HTML tags to find and add definition to dictionary
+     *
+     * @param pageId - The id of a given wiki page
+     * @param title - The title of given wiki page
+     * @param bodyHtml - The body HTML for a given wiki page
+     * @param headHtml  - The head HTML for a given wiki page
+     */
+    private addDefinition(
         pageId: number,
         title: string,
         bodyHtml: string,
         headHtml: string,
-        dictionary: RunikDictionary,
     ): void {
         // TODO: Refine this section for parsing
         const $ = cheerio.load(bodyHtml);
@@ -198,15 +190,13 @@ export default class FandomParser implements Parser {
         if (description.trim() !== '') {
             // TODO: Extract metadata here
 
-            // if (description.trim()) {
             const wordDefinition: WordDefinition = {
                 word: title,
                 information: {
                     definition: description.trim(),
                 },
             };
-            dictionary.addDefinition(wordDefinition);
-            // }
+            this._dictionary.addDefinition(wordDefinition);
         } else {
             logger.data(
                 `Description for ${title} page: ${pageId} is empty. 🔁 Skipping ....`,
@@ -214,89 +204,57 @@ export default class FandomParser implements Parser {
         }
     }
 
-    private async fetchAllPagesWithParsedData(
+    /**
+     * Parses the given `pages` and adds the corresponding definitions (if found)
+     *
+     * @param pages - A list of the pages to parse
+     */
+    private async parsePages(
         pages: Page[],
-        concurrencyLimit = 500,
-    ): Promise<ParsedPage[]> {
-        try {
-            let counter = 0;
+        concurrencyLimit = 100,
+    ): Promise<void> {
+        /**
+         * Limits how many requests are made concurrently. Defaults to 100.
+         */
+        const limit = pLimit(concurrencyLimit);
 
-            // create a new progress bar instance and use shades_classic theme
-            const progressBar = new cliProgress.SingleBar(
-                {},
-                cliProgress.Presets.shades_classic,
-            );
-
-            // start the progress bar with a total value of |pages| and start value of 0
-            progressBar.start(pages.length, 0);
-
-            /**
-             * Limits how many requests are made concurrently. Defaults to 250.
-             */
-            const limit = pLimit(concurrencyLimit);
-            const pagesPromises = pages.map(async (page: Page, idx) => {
+        await Promise.all(
+            pages.map(async page => {
                 return limit(async () => {
                     try {
-                        const pageWithParsedData =
-                            await this.addParsedPageDetails(page);
+                        let parsedPage = await this.fetchParsedPage(page);
 
-                        // update the current value in your application..
-                        counter += 1;
-                        progressBar.update(counter);
+                        if (this._dictionary.hasSpace()) {
+                            this.addDefinition(
+                                parsedPage?.parse?.pageid || -1,
+                                parsedPage?.parse?.title || '',
+                                parsedPage?.parse?.text || '',
+                                parsedPage?.parse?.headhtml || '',
+                            );
+                        }
 
-                        return pageWithParsedData;
+                        // @ts-ignore
+                        parsedPage = null;
+                        gc();
                     } catch (error) {
+                        if (error instanceof DictionaryCapacityException) {
+                            logger.error(
+                                `⛔ Dictionary has reached its capacity.`,
+                            );
+                            throw error;
+                        }
                         logger.error(error);
-                        logger.error(
-                            `Unable to add term: ${page.title} to dictionary. 🔁 Skipping ...`,
-                        );
+                        logger.data('Could not parse page. 🔁 Skipping ...');
                     }
-                    return page.page;
                 });
-            });
-
-            const pagesWithParsedData = (await Promise.all(
-                pagesPromises,
-            )) as ParsedPage[];
-            // stop the progress bar
-            progressBar.stop();
-
-            return pagesWithParsedData;
-        } catch (error) {
-            logger.error(error);
-            logger.error(`Unable to fetch batch of pages.`);
-        }
-        return [];
+            }),
+        );
     }
 
-    private async fetchAllPages(limit = 1): Promise<Page[]> {
-        try {
-            let pages: Page[] = [];
-            const batchedResults: AsyncGenerator<ApiResponse> =
-                this.bot.continuedQueryGen(
-                    {
-                        action: 'query',
-                        list: 'allpages',
-                        aplimit: 500,
-                    },
-                    limit,
-                );
-            for await (const batchedResult of batchedResults) {
-                if (batchedResult.query) {
-                    pages = pages.concat(batchedResult.query.allpages);
-                }
-            }
-
-            return pages;
-        } catch (error) {
-            logger.error(error);
-            logger.error(`Unable to fetch all pages.`);
-        }
-        return [];
-    }
-
-    private async addParsedPageDetails(page: Page): Promise<ParsedPage> {
-        const parsedPage: ParsedPage = await this.fetchParsedPage(page.pageid);
+    private async fetchParsedPage(page: Page): Promise<ParsedPage> {
+        const parsedPage: ParsedPage = await this.addParsedPageDetails(
+            page.pageid,
+        );
 
         if (parsedPage) {
             return {
@@ -307,7 +265,12 @@ export default class FandomParser implements Parser {
         return {} as ParsedPage;
     }
 
-    private async fetchParsedPage(pageId: number): Promise<ParsedPage> {
+    /**
+     *
+     * @param pageId - The id of the specific wiki page
+     * @returns - A parsed version of the specified page
+     */
+    private async addParsedPageDetails(pageId: number): Promise<ParsedPage> {
         try {
             const parsedPage = await this._bot.request({
                 action: 'parse',

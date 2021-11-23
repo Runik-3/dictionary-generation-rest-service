@@ -2,8 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 
 import XDXFGenerator from '@helpers/generators/xdxf.file.generator';
 import { logger } from '@utils/logger.util';
+import FandomParser from '@helpers/parsers/fandom.parser';
+// import FandomParser from '@helpers/parsers/backup/fandom.parser-v3';
 import I18n from '../interfaces/enums/language.enum';
-import FandomParser from '../helpers/parsers/fandom.parser';
 
 export default class DictionaryController {
     public static handleGenerateDictionary = async (
@@ -28,21 +29,21 @@ export default class DictionaryController {
             const dictionary = await parser.generateDictionary(
                 Number(capacity),
             );
-            const generator = new XDXFGenerator();
+            // const generator = new XDXFGenerator();
 
-            logger.warn('Generating xdxf ...');
-            const dictionaryContents = generator.generate(dictionary);
-            logger.warn('🏁 Finished generating xdxf.');
+            // logger.warn('Generating xdxf ...');
+            // const dictionaryContents = generator.generate(dictionary);
+            // logger.warn('🏁 Finished generating xdxf.');
 
-            res.set({
-                'Content-Type': 'text/xml; charset=utf-8',
-                'Content-Disposition': `attachment; filename="${dictionary.name}.xdxf"`,
-            });
+            // res.set({
+            //     'Content-Type': 'text/xml; charset=utf-8',
+            //     'Content-Disposition': `attachment; filename="${dictionary.name}.xdxf"`,
+            // });
 
-            res.setTimeout(10 * 60 * 1000);
+            // res.setTimeout(10 * 60 * 1000);
 
-            logger.warn('🛠️ Attempting to send file ...');
-            res.send(dictionaryContents);
+            // logger.warn('🛠️ Attempting to send file ...');
+            res.send(dictionary);
         } catch (error) {
             next(error);
         }
