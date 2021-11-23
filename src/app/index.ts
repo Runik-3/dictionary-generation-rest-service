@@ -71,12 +71,13 @@ export default class App {
                 );
             }
         });
+        this._server.timeout = KEEP_ALIVE_TIMEOUT;
         this._server.setTimeout(KEEP_ALIVE_TIMEOUT);
         this._server.keepAliveTimeout = KEEP_ALIVE_TIMEOUT;
         this._server.headersTimeout = HEADERS_TIMEOUT;
 
         this._server.on('connection', socket => {
-            socket.setTimeout(10 * 60 * 1000);
+            socket.setTimeout(15 * 60 * 1000);
             socket.once('timeout', () => {
                 process.nextTick(socket.destroy);
             });

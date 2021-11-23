@@ -85,6 +85,24 @@ export default class RunikDictionary implements Dictionary {
     }
 
     /**
+     * Checks if dictionary has space
+     *
+     * @returns `true` if dictionary has space; otherwise `false`
+     */
+    public hasSpace(): boolean {
+        return this._size < this._capacity;
+    }
+
+    /**
+     * Checks if dictionary is full
+     *
+     * @returns `false` if dictionary has space; otherwise `true`
+     */
+    public isFull(): boolean {
+        return !this.hasSpace();
+    }
+
+    /**
      * Checks to see if a given term already exists in the dictionary
      *
      * @param term - The word or phrase to be checked
@@ -95,14 +113,5 @@ export default class RunikDictionary implements Dictionary {
             return true;
         }
         return false;
-    }
-
-    /**
-     * Checks if dictionary has space
-     *
-     * @returns `true` if dictionary has space; otherwise `false`
-     */
-    private hasSpace(): boolean {
-        return this._size < this._capacity;
     }
 }
