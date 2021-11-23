@@ -48,11 +48,9 @@ export default class DictionaryController {
 
             // @ts-ignore
             parser = null;
-            gc();
 
             // @ts-ignore
             generator = null;
-            gc();
 
             // @ts-ignore
             dictionary = null;
